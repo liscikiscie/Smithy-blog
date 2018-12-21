@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 // import * as fb from '@/firebase/firebaseConfig';
-const fb = require('./firebase/firebaseConfig');
+const fb = require('./api/firebase');
 
 Vue.use(Vuex);
 

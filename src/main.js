@@ -3,7 +3,7 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 
-const fb = require('./firebase/firebaseConfig');
+const fb = require('./api/firebase');
 
 Vue.config.productionTip = false;
 
