@@ -1,10 +1,11 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import * as fb from '@/firebase/firebaseConfig';
+// import * as fb from '@/firebase/firebaseConfig';
+const fb = require('./firebase/firebaseConfig');
 
 Vue.use(Vuex);
 
-export const store = new Vuex.Store({
+export default new Vuex.Store({
     state: {
         currentUser: null,
         userProfile: {}
@@ -13,19 +14,19 @@ export const store = new Vuex.Store({
         fetchUserProfile( {commit, state} ) {
             fb.usersCollection.doc(state.currentUser.uid)
                 .get()
-                .then(response => {
-                    commit('setUserProfile', response.data())
-                }).catch(error => {
-                console.log(error);
+                .then(res => {
+                    commit('setUserProfile', res.data())
+                }).catch(err => {
+                console.log(err)
             })
         }
     },
     mutations: {
-        setCurrentUser( state, val ) {
-            state.currentUser = val;
+        setCurrentUser(state, val) {
+            state.currentUser = val
         },
-        setCurrentProfile( state, val ) {
-            state.userProfile = val;
+        setUserProfile(state, val) {
+            state.userProfile = val
         }
     }
 });

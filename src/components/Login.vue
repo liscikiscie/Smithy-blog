@@ -6,8 +6,12 @@
                 <p>Welcome to the <a href="https://smithy.pl" target="_blank">Smithy</a> social media
                     web app powered by Vue.js and Firebase.</p>
             </div>
-            <div class="col2">
-                <form @submit.prevent>
+            <div
+                    class="col2"
+                    :class="{'signUp-form':!showLoginForm}">
+                <form
+                        v-if="showLoginForm"
+                        @submit.prevent>
                     <h1>Welcome Back</h1>
 
                     <label for="email1">Email</label>
@@ -24,35 +28,41 @@
                             placeholder="******"
                             id="password1"/>
 
-                    <button class="button" @click="login">Log In</button>
+                    <button
+                            class="button"
+                            @click="login">
+                        Log In
+                    </button>
 
                     <div class="extras">
                         <a>Forgot Password</a>
-                        <a>Create an Account</a>
+                        <a @click="toggleForm">Create an Account</a>
                     </div>
                 </form>
-                <form @submit.prevent>
+                <form
+                        v-else
+                        @submit.prevent>
                     <h1>Get Started</h1>
 
                     <label for="name">Name</label>
                     <input
                             v-model.trim="signUpForm.name"
                             type="text"
-                            placeholder="Savvy Apps"
+                            placeholder="Your Name"
                             id="name"/>
 
                     <label for="title">Title</label>
                     <input
                             v-model.trim="signUpForm.title"
                             type="text"
-                            placeholder="Company"
+                            placeholder="Title/Company"
                             id="title"/>
 
                     <label for="email2">Email</label>
                     <input
                             v-model.trim="signUpForm.email"
                             type="email"
-                            placeholder="you@email.com"
+                            placeholder="your@email.com"
                             id="email2"/>
 
                     <label for="password2">Password</label>
@@ -62,10 +72,14 @@
                             placeholder="min 6 characters"
                             id="password2"/>
 
-                    <button @click="signup" class="button">Sign Up</button>
+                    <button
+                            @click="signUp"
+                            class="button">
+                        Sign Up
+                    </button>
 
                     <div class="extras">
-                        <a>Back to Log In</a>
+                        <a @click="toggleForm">Back to Log In</a>
                     </div>
                 </form>
             </div>
@@ -89,10 +103,14 @@
                     title: '',
                     email: '',
                     password: ''
-                }
+                },
+                showLoginForm: true
             }
         },
         methods: {
+            toggleForm() {
+                this.showLoginForm = !this.showLoginForm;
+            },
             login() {
                 fb.auth.signInWithEmailAndPassword(
                     this.loginForm.email,
@@ -100,17 +118,31 @@
                     .then(user => {
                         this.$store.commit('setCurrentUser', user);
                         this.$store.dispatch('fetchUserProfile');
-                        this.$router.push('/dashboard');
-                    }).catch(error => {
-                    console.log(error);
+                        this.$router.push('/dashboard')
+                    }).catch(err => {
+                    console.log(err)
                 })
             },
-            signup() {
+            signUp() {
                 fb.auth.createUserWithEmailAndPassword(
                     this.signUpForm.email,
-                    this.signUpForm.password
-                ).then(user => {
-                    this.$store.commit(('setCurrentUser', user))
+                    this.signUpForm.password)
+                    .then(user => {
+                        this.$store.commit('setCurrentUser', user.user);
+
+                        // create user obj
+                        fb.usersCollection.doc(user.user.uid)
+                            .set({
+                                name: this.signUpForm.name,
+                                title: this.signUpForm.title
+                            }).then(() => {
+                            this.$store.dispatch('fetchUserProfile');
+                            this.$router.push('/dashboard');
+                        }).catch(err => {
+                            console.log(err)
+                        })
+                    }).catch(err => {
+                    console.log(err)
                 })
             }
         }
