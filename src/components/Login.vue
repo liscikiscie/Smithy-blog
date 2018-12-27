@@ -155,7 +155,8 @@
                     this.loginForm.email,
                     this.loginForm.password)
                     .then(user => {
-                        this.$store.commit('setCurrentUser', user);
+                        console.log(user);
+                        this.$store.commit('setCurrentUser', user.user);
                         this.$store.dispatch('fetchUserProfile');
                         this.performingRequest = false;
                         this.$router.push('/dashboard')
@@ -171,7 +172,7 @@
                     this.signUpForm.password)
                     .then(user => {
                         this.$store.commit('setCurrentUser', user.user);
-
+                        console.log(user.user);
                         // create user obj
                         fb.usersCollection.doc(user.user.uid)
                             .set({
