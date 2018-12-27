@@ -6,8 +6,8 @@
 </template>
 
 <script>
-    import Navigation from '@/components/Navigation';
     import { mapState } from 'vuex';
+    import Navigation from '@/components/Navigation';
 
     export default {
         components: {
