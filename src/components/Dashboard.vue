@@ -58,18 +58,18 @@
             };
         },
         filters: {
-            formateData( val ) {
+            formatDate( val ) {
                 if ( !val ) {
-                    return '-'
+                    return '-';
                 }
                 let date = val.toDate();
-                return moment(date).fromNow()
+                return moment(date).fromNow();
             },
             trimLength( val ) {
                 if ( val.length < 200 ) {
                     return val;
                 }
-                return `${val.substring(0, 200)}...`
+                return `${val.substring(0, 200)}...`;
             }
         },
         computed: {
@@ -77,7 +77,6 @@
         },
         methods: {
             createPost() {
-                console.log(this.currentUser);
                 fb.postsCollection.add({
                     createdOn: new Date(),
                     content: this.post.content,
@@ -86,7 +85,6 @@
                     comments: 0,
                     likes: 0
                 }).then(ref => {
-                    console.log(ref);
                     this.post.content = ''
                 }).catch(err => {
                     console.log(err)

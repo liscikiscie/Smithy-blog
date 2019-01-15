@@ -10,18 +10,40 @@ fb.auth.onAuthStateChanged(user => {
         store.commit('setCurrentUser', user);
         store.dispatch('fetchUserProfile');
 
-        //realtime updates from our post collection
-        fb.postsCollection.orderBy('createdOn', 'desc')
-            .onSnapshot(querySnapshot => {
+        fb.usersCollection.doc(user.uid).onSnapshot(doc => {
+            store.commit('setUserProfile', doc.data())
+        });
+
+        // realtime updates from our posts collection
+        fb.postsCollection.orderBy('createdOn', 'desc').onSnapshot(querySnapshot => {
+            // check if created by currentUser
+            let createdByCurrentUser;
+            if ( querySnapshot.docs.length ) {
+                console.log(querySnapshot.docChanges());
+                console.log(querySnapshot.docChanges()[ 0 ]);
+                createdByCurrentUser = store.state.currentUser.uid == querySnapshot.docChanges()[ 0 ].doc.data().userId ? true : false
+            }
+
+            // add new posts to hiddenPosts array after initial load
+            if ( querySnapshot.docChanges().length !== querySnapshot.docs.length
+                && querySnapshot.docChanges()[ 0 ].type == 'added' && !createdByCurrentUser ) {
+
+                let post = querySnapshot.docChanges()[ 0 ].doc.data();
+                post.id = querySnapshot.docChanges()[ 0 ].doc.id;
+
+                store.commit('setHiddenPosts', post)
+            } else {
                 let postsArray = [];
 
                 querySnapshot.forEach(doc => {
                     let post = doc.data();
                     post.id = doc.id;
-                    postsArray.push(post)
+                    postsArray.push(post);
                 });
+
                 store.commit('setPosts', postsArray)
-            })
+            }
+        })
     }
 });
 
@@ -30,7 +52,8 @@ export const store = new Vuex.Store({
     state: {
         currentUser: null,
         userProfile: {},
-        posts: []
+        posts: [],
+        hiddenPosts: []
     },
     actions: {
         clearData( {commit} ) {
@@ -43,7 +66,6 @@ export const store = new Vuex.Store({
             fb.usersCollection.doc(state.currentUser.uid)
                 .get()
                 .then(res => {
-                    console.log(state.userProfile);
                     commit('setUserProfile', res.data())
                 }).catch(err => {
                 console.log(err)
