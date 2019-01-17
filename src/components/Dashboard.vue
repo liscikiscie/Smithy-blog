@@ -35,11 +35,51 @@
                         </ul>
                     </div>
                 </div>
-                <div>
+                <div v-else>
                     <p class="no-results">There are currently no posts</p>
                 </div>
             </div>
         </section>
+
+        <!-- comment modal -->
+        <transition name="fade">
+            <div v-if="showCommentModal" class="c-modal">
+                <div class="c-container">
+                    <a @click="closeCommentModal">X</a>
+                    <p>add a comment</p>
+                    <form @submit.prevent>
+                        <textarea v-model.trim="comment.content"></textarea>
+                        <button @click="addComment" :disabled="comment.content == ''" class="button">add comment
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </transition>
+
+        <!-- post modal -->
+        <transition name="fade">
+            <div v-if="showPostModal" class="p-modal">
+                <div class="p-container">
+                    <a @click="closePostModal" class="close">X</a>
+                    <div class="post">
+                        <h5>{{ fullPost.userName }}</h5>
+                        <span>{{ fullPost.createdOn | formatDate }}</span>
+                        <p>{{ fullPost.content }}</p>
+                        <ul>
+                            <li><a>comments {{ fullPost.comments }}</a></li>
+                            <li><a>likes {{ fullPost.likes }}</a></li>
+                        </ul>
+                    </div>
+                    <div v-show="postComments.length" class="comments">
+                        <div v-for="comment in postComments" class="comment">
+                            <p>{{ comment.userName }}</p>
+                            <span>{{ comment.createdOn | formatDate }}</span>
+                            <p>{{ comment.content }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
     </div>
 </template>
 
@@ -54,7 +94,17 @@
             return {
                 post: {
                     content: ''
-                }
+                },
+                comment: {
+                    postId: '',
+                    userId: '',
+                    content: '',
+                    postComments: 0
+                },
+                showCommentModal: false,
+                showPostModal: false,
+                fullPost: {},
+                postComments: []
             };
         },
         filters: {
@@ -73,7 +123,7 @@
             }
         },
         computed: {
-            ...mapState([ 'currentUser', 'userProfile', 'posts' ])
+            ...mapState([ 'currentUser', 'userProfile', 'posts', 'hiddenPosts' ])
         },
         methods: {
             createPost() {
@@ -89,6 +139,102 @@
                 }).catch(err => {
                     console.log(err)
                 })
+            },
+            createNewPosts() {
+                let updatedPostsArray = this.hiddenPosts.concat(this.posts);
+                //clear hiddenPosts array and update posts array
+                this.$store.commit('setHiddenPosts', null);
+                this.$store.commit('setPosts', updatedPostsArray)
+            },
+            openCommentModal( post ) {
+                this.comment.postId = post.id;
+                this.comment.userId = post.userId;
+                this.comment.postComments = post.comments;
+                this.showCommentModal = true;
+            },
+            closeCommentModal() {
+                this.comment.postId = '';
+                this.comment.userId = '';
+                this.comment.content = '';
+                this.showCommentModal = false;
+            },
+            addComment() {
+                let postId = this.comment.postId;
+                let postComments = this.comment.postComments;
+
+                fb.commentsCollection.add({
+                    createdOn: new Date(),
+                    content: this.comment.content,
+                    postId: postId,
+                    userId: this.currentUser.uid,
+                    userName: this.userProfile.name
+                }).then(doc => {
+                    fb.postsCollection.doc(postId)
+                        .update({
+                            comments: postComments + 1
+                        }).then(() => {
+                        this.closeCommentModal()
+                    })
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            likePost( postId, postLikes ) {
+                let docId = `${this.currentUser.uid}_${postId}`;
+
+                fb.likesCollection.doc(docId)
+                    .get()
+                    .then(doc => {
+                        if ( doc.exists ) {
+                            fb.likesCollection.doc(docId).delete()
+                                .then(() => {
+                                    console.log('removed like');
+                                    fb.postsCollection.doc(postId)
+                                        .update({
+                                            likes: postLikes - 1
+                                        })
+                                })
+                        } else {
+
+                            fb.likesCollection.doc(docId)
+                                .set({
+                                    postId: postId,
+                                    userId: this.currentUser.uid
+                                }).then(() => {
+                                // update post likes
+                                fb.postsCollection.doc(postId)
+                                    .update({
+                                        likes: postLikes + 1
+                                    })
+                            })
+                        }
+                    }).catch(err => {
+                    console.log(err)
+                })
+            },
+            viewPost( post ) {
+                fb.commentsCollection
+                    .where('postId', '==', post.id)
+                    .get()
+                    .then(docs => {
+                        let commentsArray = [];
+
+                        docs.forEach(doc => {
+                            let comment = doc.data();
+                            comment.id = doc.id;
+                            commentsArray.push(comment);
+                        });
+
+                        this.postComments = commentsArray;
+                        this.fullPost = post;
+                        this.showPostModal = true;
+                    }).catch(err => {
+                    console.log(err)
+                })
+            },
+            closePostModal() {
+                this.postComments = [];
+                this.showPostModal = false;
             }
         }
     }
